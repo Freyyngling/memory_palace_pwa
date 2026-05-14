@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Memory Palace Trainer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
+</head>
+<body class="bg-slate-100 min-h-screen p-6">
+<div class="max-w-4xl mx-auto space-y-6">
+  <div class="bg-white rounded-3xl shadow p-6">
+    <h1 class="text-3xl font-bold mb-2">Memory Palace Trainer</h1>
+    <p class="text-slate-600">漢字・ひらがな・カタカナのどれでも正解になります。</p>
+  </div>
+  <div id="status" class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4"></div>
+  <div class="bg-white rounded-3xl shadow p-6 space-y-3">
+    <div class="flex gap-3 flex-wrap">
+      <button onclick="generateRound()" class="bg-blue-600 text-white px-4 py-2 rounded-xl">新しい問題</button>
+      <button onclick="startQuiz()" class="bg-green-600 text-white px-4 py-2 rounded-xl">テスト開始</button>
+      <button onclick="toggleStory()" class="bg-slate-600 text-white px-4 py-2 rounded-xl">覚える内容を表示/非表示</button>
+    </div>
+  </div>
+  <div id="story" class="bg-white rounded-3xl shadow p-6"></div>
+  <div id="quiz" class="bg-white rounded-3xl shadow p-6 hidden"></div>
+</div>
+
+<script>
+const MAX_LEVEL = 5;
+let level = 1;
+let bestLevel = 1;
+let generated = [];
+let questions = [];
+let currentIndex = 0;
+let correctCount = 0;
+let streak = 0;
+
+const locations = ['玄関','台所','リビング','寝室','井戸','拝殿','枕元','本棚','庭','階段'];
+const items = ['卵','牛乳','傘','箸','お守り','着物','カメ','猫','時計','コーヒー'];
+
+const templates = [
+  '{location}で{item}が巨大化しています。',
+  '{location}で{item}が虹色に輝いています。',
+  '{location}で{item}が歌いながら踊っています。',
+  '{location}で{item}が氷漬けになっています。'
+];
+
+const readingMap = {
+  '卵':'たまご',
+  '牛乳':'ぎゅうにゅう',
+  '傘':'かさ',
+  '箸':'はし',
+  'お守り':'おまもり',
+  '着物':'きもの',
+  'カメ':'かめ',
+  '亀':'かめ',
+  '猫':'ねこ',
+  '時計':'とけい',
+  'コーヒー':'こーひー'
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function toHiragana(str) {
+  return String(str || '').replace(/[ァ-ヶ]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
+}
+
+function normalizeAnswer(str) {
+  return toHiragana(String(str || ''))
+    .replace(/[\u3000\s]/g, '')
+    .trim();
+}
+
+function isCorrectAnswer(input, correct) {
+  const user = normalizeAnswer(input);
+  const reading = readingMap[correct] || correct;
+  const normalizedReading = normalizeAnswer(reading);
+
+  const candidates = new Set();
+
+  // 正解そのもの
+  candidates.add(normalizeAnswer(correct));
+
+  // 読み
+  candidates.add(normalizedReading);
+
+  // 同じ読みを持つすべての表記（例: カメ, 亀）
+  for (const [key, value] of Object.entries(readingMap)) {
+    if (normalizeAnswer(value) === normalizedReading) {
+      candidates.add(normalizeAnswer(key));
+    }
+  }
+
+  return candidates.has(user);
+}
+
+function updateStatus() {
+  document.getElementById('status').innerHTML =
+    '<strong>現在レベル:</strong> ' + level + ' / ' + MAX_LEVEL +
+    ' &nbsp;|&nbsp; <strong>最高:</strong> ' + bestLevel +
+    ' &nbsp;|&nbsp; <strong>連続正解数:</strong> ' + streak;
+}
+
+function generateRound() {
+  const locs = shuffle(locations).slice(0, level);
+  const its = shuffle(items).slice(0, level);
+
+  generated = locs.map((location, i) => {
+    const item = its[i];
+    const template = templates[Math.floor(Math.random() * templates.length)];
+    return {
+      location,
+      item,
+      story: template.replace('{location}', location).replace('{item}', item)
+    };
+  });
+
+  renderStory();
+}
+
+function renderStory() {
+  const story = document.getElementById('story');
+  let html = '<h2 class="text-2xl font-bold mb-4">今回覚える内容（' + level + '個）</h2><ol class="list-decimal list-inside space-y-4">';
+  generated.forEach(g => {
+    html += '<li><div class="font-semibold">' + g.location + '</div><div class="text-slate-600">' + g.story + '</div></li>';
+  });
+  html += '</ol>';
+  story.innerHTML = html;
+}
+
+function toggleStory() {
+  document.getElementById('story').classList.toggle('hidden');
+}
+
+function startQuiz() {
+  questions = shuffle([...generated]);
+  currentIndex = 0;
+  correctCount = 0;
+  showQuestion();
+}
+
+function showQuestion() {
+  if (currentIndex >= questions.length) {
+    finishQuiz();
+    return;
+  }
+
+  const q = questions[currentIndex];
+  const quiz = document.getElementById('quiz');
+  quiz.classList.remove('hidden');
+  quiz.innerHTML =
+    '<h2 class="text-2xl font-bold mb-4">問題 ' + (currentIndex + 1) + ' / ' + questions.length + '</h2>' +
+    '<p class="text-lg mb-4">「' + q.location + '」にあったものは？</p>' +
+    '<input id="answer" class="w-full border rounded-xl p-3 mb-4" placeholder="漢字・ひらがな・カタカナどれでもOK">' +
+    '<button onclick="checkAnswer()" class="bg-purple-600 text-white px-4 py-2 rounded-xl">答え合わせ</button>' +
+    '<div id="feedback" class="mt-4"></div>';
+
+  const input = document.getElementById('answer');
+  input.focus();
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkAnswer();
+  });
+}
+
+function checkAnswer() {
+  const input = document.getElementById('answer').value;
+  const correct = questions[currentIndex].item;
+  const feedback = document.getElementById('feedback');
+
+  if (isCorrectAnswer(input, correct)) {
+    correctCount++;
+    streak++;
+    updateStatus();
+    feedback.innerHTML = '<p class="text-green-600 font-semibold">正解です。</p>';
+  } else {
+    const previousStreak = streak;
+    streak = 0;
+    updateStatus();
+    feedback.innerHTML = '<p class="text-red-600 font-semibold">不正解です。正解は「' + correct + '」でした。<br>連続正解数: ' + previousStreak + ' でリセットされました。</p>';
+  }
+
+  currentIndex++;
+  setTimeout(showQuestion, 1000);
+}
+
+function finishQuiz() {
+  const success = correctCount === questions.length;
+
+  if (success) {
+    level = Math.min(level + 1, MAX_LEVEL);
+    bestLevel = Math.max(bestLevel, level);
+  } else {
+    level = 1;
+  }
+
+  updateStatus();
+  generateRound();
+
+  document.getElementById('quiz').innerHTML =
+    '<h2 class="text-2xl font-bold mb-4">' + (success ? '全問正解' : '失敗') + '</h2>' +
+    '<p class="mb-4">' + correctCount + ' / ' + questions.length + ' 正解</p>' +
+    '<button onclick="startQuiz()" class="bg-green-600 text-white px-4 py-2 rounded-xl">次のラウンドへ</button>';
+}
+
+updateStatus();
+generateRound();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js');
+  });
+}
+</script>
+
+</body>
+</html>
