@@ -235,6 +235,43 @@ function showQuestion() {
     finishQuiz();
     return;
   }
+
+  const q = questions[currentIndex];
+  const quiz = document.getElementById('quiz');
+  const answerMode = document.getElementById('answerMode').value;
+
+  quiz.classList.remove('hidden');
+
+  let html =
+    '<h2 class="text-2xl font-bold mb-4">問題 ' +
+    (currentIndex + 1) +
+    ' / ' +
+    questions.length +
+    '</h2>' +
+    '<p class="text-lg mb-4">「' + q.location + '」にあったものは？</p>';
+
+  if (answerMode === 'input') {
+    html +=
+      '<input id="answer" class="w-full border rounded-xl p-3 mb-4" placeholder="漢字・ひらがな・カタカナどれでもOK">' +
+      '<button onclick="checkAnswer()" class="bg-purple-600 text-white px-4 py-2 rounded-xl">答え合わせ</button>';
+  } else {
+    html += '<div id="choices" class="grid grid-cols-2 gap-3 mb-4"></div>';
+  }
+
+  html += '<div id="feedback" class="mt-4"></div>';
+
+  quiz.innerHTML = html;
+
+  if (answerMode === 'input') {
+    const input = document.getElementById('answer');
+    input.focus();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkAnswer();
+    });
+  } else {
+    renderChoiceButtons(q.item);
+  }
+}
 function generateChoices(correct) {
   const choices = [correct];
 
@@ -336,7 +373,8 @@ function checkAnswer(choiceValue = null) {
     correctCount++;
     streak++;
     updateStatus();
-    feedback.innerHTML = '<p class="text-green-600 font-semibold">正解です。</p>';
+    feedback.innerHTML =
+      '<p class="text-green-600 font-semibold">正解です。</p>';
   } else {
     const previousStreak = streak;
     streak = 0;
@@ -349,7 +387,6 @@ function checkAnswer(choiceValue = null) {
       ' でリセットされました。</p>';
   }
 
-  // 4択モードではボタンを無効化
   const buttons = document.querySelectorAll('#choices button');
   buttons.forEach(btn => {
     btn.disabled = true;
