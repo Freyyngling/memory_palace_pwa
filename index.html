@@ -1,3 +1,18 @@
+# Memory Palace Trainer 完成版（4択ボタン対応）
+
+以下は、そのまま `index.html` にコピペして使える完成版です。
+
+* 手入力モード
+* 4択ボタンモード
+* 1問 → 2問 → 3問 → 4問 → 5問
+* 不正解でレベル1に戻る
+* 連続正解数表示
+* 覚える内容の表示/非表示
+* 漢字・ひらがな・カタカナ対応
+
+---
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -6,32 +21,35 @@
 <meta name="robots" content="noindex, nofollow, noarchive">
 <title>Memory Palace Trainer</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4f46e5">
 </head>
 <body class="bg-slate-100 min-h-screen p-6">
 <div class="max-w-4xl mx-auto space-y-6">
+
   <div class="bg-white rounded-3xl shadow p-6">
     <h1 class="text-3xl font-bold mb-2">Memory Palace Trainer</h1>
     <p class="text-slate-600">漢字・ひらがな・カタカナのどれでも正解になります。</p>
   </div>
+
   <div id="status" class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4"></div>
+
   <div class="bg-white rounded-3xl shadow p-6 space-y-3">
     <div class="flex gap-3 flex-wrap items-center">
-  <button onclick="generateRound()" class="bg-blue-600 text-white px-4 py-2 rounded-xl">新しい問題</button>
-  <button onclick="startQuiz()" class="bg-green-600 text-white px-4 py-2 rounded-xl">テスト開始</button>
-  <button onclick="toggleStory()" class="bg-slate-600 text-white px-4 py-2 rounded-xl">覚える内容を表示/非表示</button>
+      <button onclick="generateRound()" class="bg-blue-600 text-white px-4 py-2 rounded-xl">新しい問題</button>
+      <button onclick="startQuiz()" class="bg-green-600 text-white px-4 py-2 rounded-xl">テスト開始</button>
+      <button onclick="toggleStory()" class="bg-slate-600 text-white px-4 py-2 rounded-xl">覚える内容を表示/非表示</button>
 
-  <label class="flex items-center gap-2 ml-auto">
-    <span class="text-sm font-medium">回答方式:</span>
-    <select id="answerMode" class="border rounded-lg px-3 py-2">
-      <option value="input">手入力</option>
-      <option value="choice">4択ボタン</option>
-    </select>
-  </label>
+      <label class="flex items-center gap-2 ml-auto">
+        <span class="text-sm font-medium">回答方式:</span>
+        <select id="answerMode" class="border rounded-lg px-3 py-2">
+          <option value="input">手入力</option>
+          <option value="choice">4択ボタン</option>
+        </select>
+      </label>
     </div>
   </div>
+
   <div id="story" class="bg-white rounded-3xl shadow p-6"></div>
   <div id="quiz" class="bg-white rounded-3xl shadow p-6 hidden"></div>
 </div>
@@ -47,98 +65,99 @@ let correctCount = 0;
 let streak = 0;
 
 const locations = ['玄関','下駄箱','廊下','階段','踊り場','台所','冷蔵庫','流し台','ダイニング','テーブル',
-      'リビング','ソファ','テレビ前','寝室','ベッド','枕元','クローゼット','洗面所','鏡の前','風呂場',
-      '浴槽','トイレ','ベランダ','庭','物置','書斎','本棚','机','パソコン前','椅子',
-      '窓際','カーテン','屋根裏','押し入れ','駐車場','車の中','門','ポスト','畑','温室',
-      '神社の鳥居','石段','拝殿','井戸','倉庫','納屋','作業小屋','ハウス','コンポスト','用水路'];
+  'リビング','ソファ','テレビ前','寝室','ベッド','枕元','クローゼット','洗面所','鏡の前','風呂場',
+  '浴槽','トイレ','ベランダ','庭','物置','書斎','本棚','机','パソコン前','椅子',
+  '窓際','カーテン','屋根裏','押し入れ','駐車場','車の中','門','ポスト','畑','温室',
+  '神社の鳥居','石段','拝殿','井戸','倉庫','納屋','作業小屋','ハウス','コンポスト','用水路'];
+
 const items = ['卵','牛乳','バナナ','パン','コーヒー','リンゴ','猫','犬','時計','剣',
-      '月','太陽','鍵','帽子','靴','カメラ','本','鉛筆','スマホ','傘',
-      '花','ろうそく','金貨','宝石','ドラゴン','アイス','ピザ','魚','星','地図',
-      '望遠鏡','薬','マグカップ','ハンマー','ギター','ラジオ','王冠','ロボット','船','飛行機',
-      '風船','ケーキ','チーズ','トマト','ニンジン','お茶','サングラス','手袋','盾','魔法の杖',
-      '蝶','蛇','虎','ライオン','ペンギン','カメ','ヘルメット','鍵盤','ドラム','コンパス',
-      '巻物','羽根','王座','ダイヤ','真珠','マント','ホウキ','砂時計','ランタン','炎',
-      '氷','雷','雲','虹','雪だるま','城','橋','鐘','たいまつ','コイン',
-      'お守り','茶碗','箸','扇子','着物','忍者','侍','鬼','天狗','招き猫'];
+  '月','太陽','鍵','帽子','靴','カメラ','本','鉛筆','スマホ','傘',
+  '花','ろうそく','金貨','宝石','ドラゴン','アイス','ピザ','魚','星','地図',
+  '望遠鏡','薬','マグカップ','ハンマー','ギター','ラジオ','王冠','ロボット','船','飛行機',
+  '風船','ケーキ','チーズ','トマト','ニンジン','お茶','サングラス','手袋','盾','魔法の杖',
+  '蝶','蛇','虎','ライオン','ペンギン','カメ','ヘルメット','鍵盤','ドラム','コンパス',
+  '巻物','羽根','王座','ダイヤ','真珠','マント','ホウキ','砂時計','ランタン','炎',
+  '氷','雷','雲','虹','雪だるま','城','橋','鐘','たいまつ','コイン',
+  'お守り','茶碗','箸','扇子','着物','忍者','侍','鬼','天狗','招き猫'];
 
 const templates = [
-    '{location}に入ると、巨大な{item}が目の前に現れます。',
-      '{location}いっぱいに{item}があふれ、足元まで埋め尽くしています。',
-      '{location}で{item}がキラキラ光りながら宙に浮かんでいます。',
-      '{location}から{item}の強烈な気配が漂ってきます。',
-      '{location}で{item}が歌いながら踊っています。',
-      '{location}で{item}が突然爆発し、周囲に飛び散ります。',
-      '{location}の天井から{item}が雨のように降ってきます。',
-      '{location}に触れると、{item}が金色に輝き始めます。',
-      '{location}の床に{item}が転がっていて、踏むと大きな音を立てます。',
-      '{location}で{item}がこちらを見つめながらゆっくり回転しています。',
-      '{location}の壁一面に{item}の模様が描かれています。',
-      '{location}を開けると、中から{item}が飛び出してきます。',
-      '{location}で{item}が炎に包まれながら燃えています。',
-      '{location}で{item}が氷漬けになって輝いています。',
-      '{location}の真ん中で{item}が王様のように鎮座しています。',
-      '{location}で{item}が雷をまとい、バチバチと音を立てています。',
-      '{location}に近づくと、{item}の甘い香りが一気に広がります。',
-      '{location}で{item}が巨大化し、天井につかえています。',
-      '{location}の隅で{item}が小さく震えています。',
-      '{location}で{item}が虹色に光りながらくるくる回っています。'
+  '{location}に入ると、巨大な{item}が目の前に現れます。',
+  '{location}いっぱいに{item}があふれ、足元まで埋め尽くしています。',
+  '{location}で{item}がキラキラ光りながら宙に浮かんでいます。',
+  '{location}から{item}の強烈な気配が漂ってきます。',
+  '{location}で{item}が歌いながら踊っています。',
+  '{location}で{item}が突然爆発し、周囲に飛び散ります。',
+  '{location}の天井から{item}が雨のように降ってきます。',
+  '{location}に触れると、{item}が金色に輝き始めます。',
+  '{location}の床に{item}が転がっていて、踏むと大きな音を立てます。',
+  '{location}で{item}がこちらを見つめながらゆっくり回転しています。',
+  '{location}の壁一面に{item}の模様が描かれています。',
+  '{location}を開けると、中から{item}が飛び出してきます。',
+  '{location}で{item}が炎に包まれながら燃えています。',
+  '{location}で{item}が氷漬けになって輝いています。',
+  '{location}の真ん中で{item}が王様のように鎮座しています。',
+  '{location}で{item}が雷をまとい、バチバチと音を立てています。',
+  '{location}に近づくと、{item}の甘い香りが一気に広がります。',
+  '{location}で{item}が巨大化し、天井につかえています。',
+  '{location}の隅で{item}が小さく震えています。',
+  '{location}で{item}が虹色に光りながらくるくる回っています。'
 ];
 
 const readingMap = {
-     '卵': 'たまご',
-  '牛乳': 'ぎゅうにゅう',
-  '時計': 'とけい',
-  '剣': 'けん',
-  '月': 'つき',
-  '太陽': 'たいよう',
-  '鍵': 'かぎ',
-  '帽子': 'ぼうし',
-  '靴': 'くつ',
-  '鉛筆': 'えんぴつ',
-  '傘': 'かさ',
-  '花': 'はな',
-  '金貨': 'きんか',
-  '宝石': 'ほうせき',
-  '魚': 'さかな',
-  '星': 'ほし',
-  '地図': 'ちず',
-  '望遠鏡': 'ぼうえんきょう',
-  '薬': 'くすり',
-  '王冠': 'おうかん',
-  '船': 'ふね',
-  '飛行機': 'ひこうき',
-  '風船': 'ふうせん',
-  '手袋': 'てぶくろ',
-  '盾': 'たて',
-  '魔法の杖': 'まほうのつえ',
-  '蝶': 'ちょう',
-  '蛇': 'へび',
-  '虎': 'とら',
-  '鍵盤': 'けんばん',
-  '巻物': 'まきもの',
-  '羽根': 'はね',
-  '王座': 'おうざ',
-  '真珠': 'しんじゅ',
-  '砂時計': 'すなどけい',
-  '炎': 'ほのお',
-  '氷': 'こおり',
-  '雷': 'かみなり',
-  '雲': 'くも',
-  '虹': 'にじ',
-  '雪だるま': 'ゆきだるま',
-  '城': 'しろ',
-  '橋': 'はし',
-  '鐘': 'かね',
-  'お守り': 'おまもり',
-  '茶碗': 'ちゃわん',
-  '箸': 'はし',
-  '扇子': 'せんす',
-  '着物': 'きもの',
-  '忍者': 'にんじゃ',
-  '侍': 'さむらい',
-  '鬼': 'おに',
-  '天狗': 'てんぐ',
-  '招き猫': 'まねきねこ'
+  '卵':'たまご',
+  '牛乳':'ぎゅうにゅう',
+  '時計':'とけい',
+  '剣':'けん',
+  '月':'つき',
+  '太陽':'たいよう',
+  '鍵':'かぎ',
+  '帽子':'ぼうし',
+  '靴':'くつ',
+  '鉛筆':'えんぴつ',
+  '傘':'かさ',
+  '花':'はな',
+  '金貨':'きんか',
+  '宝石':'ほうせき',
+  '魚':'さかな',
+  '星':'ほし',
+  '地図':'ちず',
+  '望遠鏡':'ぼうえんきょう',
+  '薬':'くすり',
+  '王冠':'おうかん',
+  '船':'ふね',
+  '飛行機':'ひこうき',
+  '風船':'ふうせん',
+  '手袋':'てぶくろ',
+  '盾':'たて',
+  '魔法の杖':'まほうのつえ',
+  '蝶':'ちょう',
+  '蛇':'へび',
+  '虎':'とら',
+  '鍵盤':'けんばん',
+  '巻物':'まきもの',
+  '羽根':'はね',
+  '王座':'おうざ',
+  '真珠':'しんじゅ',
+  '砂時計':'すなどけい',
+  '炎':'ほのお',
+  '氷':'こおり',
+  '雷':'かみなり',
+  '雲':'くも',
+  '虹':'にじ',
+  '雪だるま':'ゆきだるま',
+  '城':'しろ',
+  '橋':'はし',
+  '鐘':'かね',
+  'お守り':'おまもり',
+  '茶碗':'ちゃわん',
+  '箸':'はし',
+  '扇子':'せんす',
+  '着物':'きもの',
+  '忍者':'にんじゃ',
+  '侍':'さむらい',
+  '鬼':'おに',
+  '天狗':'てんぐ',
+  '招き猫':'まねきねこ'
 };
 
 function shuffle(arr) {
@@ -168,14 +187,9 @@ function isCorrectAnswer(input, correct) {
   const normalizedReading = normalizeAnswer(reading);
 
   const candidates = new Set();
-
-  // 正解そのもの
   candidates.add(normalizeAnswer(correct));
-
-  // 読み
   candidates.add(normalizedReading);
 
-  // 同じ読みを持つすべての表記（例: カメ, 亀）
   for (const [key, value] of Object.entries(readingMap)) {
     if (normalizeAnswer(value) === normalizedReading) {
       candidates.add(normalizeAnswer(key));
@@ -211,10 +225,14 @@ function generateRound() {
 
 function renderStory() {
   const story = document.getElementById('story');
-  let html = '<h2 class="text-2xl font-bold mb-4">今回覚える内容（' + level + '個）</h2><ol class="list-decimal list-inside space-y-4">';
+  let html = '<h2 class="text-2xl font-bold mb-4">今回覚える内容（' + level + '個）</h2>';
+  html += '<ol class="list-decimal list-inside space-y-4">';
+
   generated.forEach(g => {
-    html += '<li><div class="font-semibold">' + g.location + '</div><div class="text-slate-600">' + g.story + '</div></li>';
+    html += '<li><div class="font-semibold">' + g.location + '</div>';
+    html += '<div class="text-slate-600">' + g.story + '</div></li>';
   });
+
   html += '</ol>';
   story.innerHTML = html;
 }
@@ -285,7 +303,7 @@ function generateChoices(correct) {
 
   return shuffle(choices);
 }
-  
+
 function renderChoiceButtons(correct) {
   const container = document.getElementById('choices');
   const choices = generateChoices(correct);
@@ -301,59 +319,6 @@ function renderChoiceButtons(correct) {
     button.onclick = () => checkAnswer(choice);
 
     container.appendChild(button);
-  });
-}
-  const q = questions[currentIndex];
-  const quiz = document.getElementById('quiz');
-  const answerMode = document.getElementById('answerMode').value;
-
-  quiz.classList.remove('hidden');
-
-  let html =
-    '<h2 class="text-2xl font-bold mb-4">問題 ' +
-    (currentIndex + 1) +
-    ' / ' +
-    questions.length +
-    '</h2>' +
-    '<p class="text-lg mb-4">「' + q.location + '」にあったものは？</p>';
-
-  if (answerMode === 'input') {
-    html +=
-      '<input id="answer" class="w-full border rounded-xl p-3 mb-4" placeholder="漢字・ひらがな・カタカナどれでもOK">' +
-      '<button onclick="checkAnswer()" class="bg-purple-600 text-white px-4 py-2 rounded-xl">答え合わせ</button>';
-  } else {
-    html += '<div id="choices" class="grid grid-cols-2 gap-3 mb-4"></div>';
-  }
-
-  html += '<div id="feedback" class="mt-4"></div>';
-
-  quiz.innerHTML = html;
-
-  if (answerMode === 'input') {
-    const input = document.getElementById('answer');
-    input.focus();
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') checkAnswer();
-    });
-  } else {
-    renderChoiceButtons(q.item);
-  }
-}
-
-  const q = questions[currentIndex];
-  const quiz = document.getElementById('quiz');
-  quiz.classList.remove('hidden');
-  quiz.innerHTML =
-    '<h2 class="text-2xl font-bold mb-4">問題 ' + (currentIndex + 1) + ' / ' + questions.length + '</h2>' +
-    '<p class="text-lg mb-4">「' + q.location + '」にあったものは？</p>' +
-    '<input id="answer" class="w-full border rounded-xl p-3 mb-4" placeholder="漢字・ひらがな・カタカナどれでもOK">' +
-    '<button onclick="checkAnswer()" class="bg-purple-600 text-white px-4 py-2 rounded-xl">答え合わせ</button>' +
-    '<div id="feedback" class="mt-4"></div>';
-
-  const input = document.getElementById('answer');
-  input.focus();
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') checkAnswer();
   });
 }
 
@@ -374,8 +339,7 @@ function checkAnswer(choiceValue = null) {
     correctCount++;
     streak++;
     updateStatus();
-    feedback.innerHTML =
-      '<p class="text-green-600 font-semibold">正解です。</p>';
+    feedback.innerHTML = '<p class="text-green-600 font-semibold">正解です。</p>';
   } else {
     const previousStreak = streak;
     streak = 0;
@@ -431,3 +395,16 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+```
+
+---
+
+## 更新後の手順
+
+1. `index.html` をこの内容で置き換える
+2. GitHub にアップロード
+3. `service-worker.js` の `CACHE_NAME` を更新
+4. Android / PC のサイトデータを削除
+5. 再読み込み
+
+これで 4択ボタン方式が使えるようになります。
