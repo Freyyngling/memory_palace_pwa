@@ -272,6 +272,7 @@ function showQuestion() {
     renderChoiceButtons(q.item);
   }
 }
+
 function generateChoices(correct) {
   const choices = [correct];
 
@@ -284,7 +285,7 @@ function generateChoices(correct) {
 
   return shuffle(choices);
 }
-
+  
 function renderChoiceButtons(correct) {
   const container = document.getElementById('choices');
   const choices = generateChoices(correct);
