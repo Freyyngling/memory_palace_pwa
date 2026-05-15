@@ -18,10 +18,18 @@
   </div>
   <div id="status" class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4"></div>
   <div class="bg-white rounded-3xl shadow p-6 space-y-3">
-    <div class="flex gap-3 flex-wrap">
-      <button onclick="generateRound()" class="bg-blue-600 text-white px-4 py-2 rounded-xl">新しい問題</button>
-      <button onclick="startQuiz()" class="bg-green-600 text-white px-4 py-2 rounded-xl">テスト開始</button>
-      <button onclick="toggleStory()" class="bg-slate-600 text-white px-4 py-2 rounded-xl">覚える内容を表示/非表示</button>
+    <div class="flex gap-3 flex-wrap items-center">
+  <button onclick="generateRound()" class="bg-blue-600 text-white px-4 py-2 rounded-xl">新しい問題</button>
+  <button onclick="startQuiz()" class="bg-green-600 text-white px-4 py-2 rounded-xl">テスト開始</button>
+  <button onclick="toggleStory()" class="bg-slate-600 text-white px-4 py-2 rounded-xl">覚える内容を表示/非表示</button>
+
+  <label class="flex items-center gap-2 ml-auto">
+    <span class="text-sm font-medium">回答方式:</span>
+    <select id="answerMode" class="border rounded-lg px-3 py-2">
+      <option value="input">手入力</option>
+      <option value="choice">4択ボタン</option>
+    </select>
+  </label>
     </div>
   </div>
   <div id="story" class="bg-white rounded-3xl shadow p-6"></div>
@@ -227,6 +235,72 @@ function showQuestion() {
     finishQuiz();
     return;
   }
+function generateChoices(correct) {
+  const choices = [correct];
+
+  while (choices.length < 4) {
+    const candidate = items[Math.floor(Math.random() * items.length)];
+    if (!choices.includes(candidate)) {
+      choices.push(candidate);
+    }
+  }
+
+  return shuffle(choices);
+}
+
+function renderChoiceButtons(correct) {
+  const container = document.getElementById('choices');
+  const choices = generateChoices(correct);
+
+  container.innerHTML = '';
+
+  choices.forEach(choice => {
+    const button = document.createElement('button');
+    button.textContent = choice;
+    button.className =
+      'bg-purple-100 hover:bg-purple-200 border border-purple-300 rounded-xl px-4 py-3 font-medium';
+
+    button.onclick = () => checkAnswer(choice);
+
+    container.appendChild(button);
+  });
+}
+  const q = questions[currentIndex];
+  const quiz = document.getElementById('quiz');
+  const answerMode = document.getElementById('answerMode').value;
+
+  quiz.classList.remove('hidden');
+
+  let html =
+    '<h2 class="text-2xl font-bold mb-4">問題 ' +
+    (currentIndex + 1) +
+    ' / ' +
+    questions.length +
+    '</h2>' +
+    '<p class="text-lg mb-4">「' + q.location + '」にあったものは？</p>';
+
+  if (answerMode === 'input') {
+    html +=
+      '<input id="answer" class="w-full border rounded-xl p-3 mb-4" placeholder="漢字・ひらがな・カタカナどれでもOK">' +
+      '<button onclick="checkAnswer()" class="bg-purple-600 text-white px-4 py-2 rounded-xl">答え合わせ</button>';
+  } else {
+    html += '<div id="choices" class="grid grid-cols-2 gap-3 mb-4"></div>';
+  }
+
+  html += '<div id="feedback" class="mt-4"></div>';
+
+  quiz.innerHTML = html;
+
+  if (answerMode === 'input') {
+    const input = document.getElementById('answer');
+    input.focus();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkAnswer();
+    });
+  } else {
+    renderChoiceButtons(q.item);
+  }
+}
 
   const q = questions[currentIndex];
   const quiz = document.getElementById('quiz');
@@ -245,8 +319,16 @@ function showQuestion() {
   });
 }
 
-function checkAnswer() {
-  const input = document.getElementById('answer').value;
+function checkAnswer(choiceValue = null) {
+  const answerMode = document.getElementById('answerMode').value;
+
+  let input;
+  if (answerMode === 'choice') {
+    input = choiceValue;
+  } else {
+    input = document.getElementById('answer').value;
+  }
+
   const correct = questions[currentIndex].item;
   const feedback = document.getElementById('feedback');
 
@@ -259,8 +341,20 @@ function checkAnswer() {
     const previousStreak = streak;
     streak = 0;
     updateStatus();
-    feedback.innerHTML = '<p class="text-red-600 font-semibold">不正解です。正解は「' + correct + '」でした。<br>連続正解数: ' + previousStreak + ' でリセットされました。</p>';
+    feedback.innerHTML =
+      '<p class="text-red-600 font-semibold">不正解です。正解は「' +
+      correct +
+      '」でした。<br>連続正解数: ' +
+      previousStreak +
+      ' でリセットされました。</p>';
   }
+
+  // 4択モードではボタンを無効化
+  const buttons = document.querySelectorAll('#choices button');
+  buttons.forEach(btn => {
+    btn.disabled = true;
+    btn.classList.add('opacity-60');
+  });
 
   currentIndex++;
   setTimeout(showQuestion, 1000);
