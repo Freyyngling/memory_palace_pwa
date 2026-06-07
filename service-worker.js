@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memory-palace-v12';
+const CACHE_NAME = 'memory-palace-v13';
 const URLS = [
   './',
   './index.html',
